@@ -173,13 +173,13 @@ sudo ./omsadmin.sh -w <WorkspaceID> -s <Shared Key>
 ```
 
 ## Onboarding using a file
-1.	Create the file /etc/omsagent-onboard.conf The file must be writable for the user omsagent. 
-sudo su omsagent vi /etc/omsagent-onboard.conf
+1.	Create the file `/etc/omsagent-onboard.conf` The file must be readable and writable for the user omsagent. 
+`sudo su omsagent vi /etc/omsagent-onboard.conf`
 2.	Insert the following lines in the file with your Workspace ID and Shared Key:
 `WORKSPACE_ID=<WorkspaceID>`
 `SHARED_KEY=<Shared Key>`
 3.	Restart the omsagent:
-sudo service omsagent restart
+`sudo service omsagent restart`
 4.	The file will be deleted on successful onboarding
 
 # Viewing Linux Data
@@ -255,7 +255,10 @@ sudo /opt/microsoft/apache-cimprov/bin/apache_config.sh -u
 ```
 
 ## Configuring Collected Data on the Linux Computer
-Syslog events and performance counters to collect can be specified in configuration files on the Linux computers. *If you opt to configure data collection through editing of the agent configuration files, you should disable the centralized configuration*.  Instructions are provided below to configure data collection in the agent’s configuration files as well as to disable central configuration for all OMS agents for Linux, or individual computers. 
+Syslog events and performance counters to collect can be specified in configuration files on the Linux computers. *If you opt to configure data collection through editing of the agent configuration files, you should disable the centralized configuration or add custom configurations to the `omsagent.d/` directory.*  Instructions are provided below to configure data collection in the agent’s configuration files as well as to disable central configuration for all OMS agents for Linux, or individual computers. 
+
+###omsagent.d
+The directory `/etc/opt/microsoft/omsagent/conf/omsagent.d` is an *include* path for omsagent configuration files. Any `*.conf` files in this directory will be included in the configuration for omsagent. The files must be readable by the omsagent user, and will not be modified by centralized configuration options. This allows specific customizations to be added on the Linux machine, while still using centralized configuration. 
 
 ### Disabling central configuration
 #### Disabling central configuration for all Linux computers
@@ -313,7 +316,7 @@ log { source(src); filter(f_warning_oms); destination(warning_oms); };
 ```
 
 ###Enabling high volume syslog event collection
-By default, the OMS Agent for Linux receives events from the syslog daemon over UDP. In cases where a Linux machine is expected to collect a high volume of syslog events (greater than 130 per second), such as when a Linux agent is receiving events from other devices, the configuration should be modified to use TCP transport between the syslog daemon and OMS agent.
+By default, the OMS Agent for Linux receives events from the syslog daemon over UDP. In cases where a Linux machine is expected to collect a high volume of syslog events, such as when a Linux agent is receiving events from other devices, the configuration should be modified to use TCP transport between the syslog daemon and OMS agent. 
  
 **To switch from UDP to TCP for syslog:**
 *	Disable centralized configuration:
@@ -331,16 +334,6 @@ By default, the OMS Agent for Linux receives events from the syslog daemon over 
 	</source>
 	```
 
-*	If you would like the omsagent to continue to use UDP for local syslog events but listen for remote syslog events with TCP, you can add another `<source>` element to the file using an alternate **port**:
-```
-<source>
-	  type syslog
-	  port 25225
-	  bind 0.0.0.0
-	  protocol_type tcp
-	  tag oms.syslog
-</source>
-```
 	 
 *	Modify the /etc/rsyslog.d/95-omsagent.conf file and replace any instances of: `@127.0.0.1:25224` with `@@127.0.0.1:25224`. For more information on controlling which syslog events are collected, reference the **Syslog Events** section above. 
 *	Restart the omsagent and syslog daemons:
@@ -359,6 +352,16 @@ By default, the OMS Agent for Linux receives events from the syslog daemon over 
 If you are using selinux, the semanage tool can be used to allow TCP traffic for the port 25224:
 `sudo semanage port -a -t syslogd_port_t -p tcp 25224`
 
+*		If you would like the omsagent to continue to use UDP for local syslog events but listen for remote syslog events with TCP, you can add another `<source>` element to the file using an alternate **port**:
+```
+<source>
+	  type syslog
+	  port 25225
+	  bind 0.0.0.0
+	  protocol_type tcp
+	  tag oms.syslog
+</source>
+```
 
 ### Performance metrics
 Performance metrics to collect are controlled by the configuration in `/etc/opt/microsoft/omsagent/conf/omsagent.conf`. The appendix to this document details available classes and metrics in this release of the agent.
